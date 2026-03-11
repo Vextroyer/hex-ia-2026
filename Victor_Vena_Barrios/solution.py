@@ -43,9 +43,9 @@ class SmartPlayer(Player):
         for action in actions:
             averageUtility = utility[action] / playouts
 
-            # For breaking ties randomly
-            if averageUtility == bestAverageUtility:
+            if fabs(averageUtility - bestAverageUtility) < 0.000001:
                 bestAction.append(action)
+                continue
 
             if averageUtility > bestAverageUtility:
                 bestAction = [ action ]
@@ -56,7 +56,7 @@ class SmartPlayer(Player):
 
     # Returns the wining player. Simulates alternating plays, following a playout policy, until it reaches a terminal state. 
     def Simulate(self,board: HexBoard, player):
-        """ board: A COPY of the current board. player: the current player"""
+        """ board: A copy of the current board. player: the current player"""
         while not self.IsTerminal(board):
             actions = self.GetCandidateActions(board,player) # Playout policy
             action = random.choice(actions)
@@ -198,13 +198,14 @@ class SmartPlayer(Player):
         return candidates
 
 
-    # Modify state of a board 
     def ApplyAction(self,action,board: HexBoard):
+        """Given an action and a board, modify the board by appliying the action."""
         row, col, player_id = action
         if not board.place_piece(row,col,player_id):
             raise RuntimeError(f"Cannot apply action. Row {action[0]}, col {action[1]} , player {action[2]}")
 
     def MakeNewBoard(self,action,board):
+        """Given an action and a board returns a new board, the result of appliying the action on the old board."""
         newBoard = board.clone()
         self.ApplyAction(action,newBoard)
         return newBoard
