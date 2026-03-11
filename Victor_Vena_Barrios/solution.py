@@ -5,10 +5,8 @@ import time as time
 
 # Smart Player is a MonteCarloTreeSearch based player.
 class SmartPlayer(Player):
-    def __init__(self,player_id):
-        super().__init__(player_id)
-        # Time limit of five seconds
-        self.time_limit = 4.9
+    # Time limit of five seconds
+    time_limit = 4.9
 
     def play(self, board: HexBoard) -> tuple:
         return self.mcts(board)
