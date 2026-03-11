@@ -1,6 +1,7 @@
 from player import Player
 from board import HexBoard
 import random as random
+import time as time
 
 # Smart Player is a MonteCarloTreeSearch based player.
 class SmartPlayer(Player):
@@ -13,6 +14,7 @@ class SmartPlayer(Player):
         return self.mcts(board)
 
     def mcts(self,board: HexBoard):
+        startTime = time.time()
         actions = self.GetCandidateActions(board,self.player_id)
         
         utility = {}
@@ -21,7 +23,7 @@ class SmartPlayer(Player):
 
         playouts = 0
         
-        while playouts < 100:
+        while time.time() - startTime < self.time_limit:
             action = random.choice(actions)
             simulationBoard = board.clone()
             self.ApplyAction(action,simulationBoard)
