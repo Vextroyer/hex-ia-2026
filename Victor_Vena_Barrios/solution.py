@@ -18,6 +18,7 @@ class SmartPlayer(Player):
         startTime = time.time()
 
         actions = self.GetCandidateActions(board,self.player_id)
+        other_player = self.AlternatePlayer(self.player_id)
 
         utility = {}
         for action in actions:
@@ -27,9 +28,7 @@ class SmartPlayer(Player):
         
         while time.time() - startTime < self.time_limit:
             action = random.choice(actions)
-            simulationBoard = board.clone()
-            self.ApplyAction(action,simulationBoard)
-            winner = self.Simulate(simulationBoard,self.AlternatePlayer(self.player_id))
+            winner = self.Simulate(self.MakeNewBoard(action,board),other_player)
             if winner == self.player_id:
                 utility[action] = utility[action] + 1
             playouts = playouts + 1
@@ -199,11 +198,16 @@ class SmartPlayer(Player):
         return candidates
 
 
-    # Modify state of a board
+    # Modify state of a board 
     def ApplyAction(self,action,board: HexBoard):
         row, col, player_id = action
         if not board.place_piece(row,col,player_id):
-            raise RuntimeError("Cannot apply action. This should not happen.")
+            raise RuntimeError(f"Cannot apply action. Row {action[0]}, col {action[1]} , player {action[2]}")
+
+    def MakeNewBoard(self,action,board):
+        newBoard = board.clone()
+        self.ApplyAction(action,newBoard)
+        return newBoard
 
     # A state is terminal if either player has connected its sides
     def IsTerminal(self,board):
@@ -214,5 +218,5 @@ class SmartPlayer(Player):
             return 2
         if player == 2:
             return 1
-        raise RuntimeError("Invalid player")
+        raise RuntimeError(f"Invalid player. Expected 1 or 2 but received {player}")
 
