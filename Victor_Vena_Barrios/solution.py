@@ -43,7 +43,7 @@ class SmartPlayer(Player):
         for action in actions:
             averageUtility = utility[action] / playouts
 
-            if fabs(averageUtility - bestAverageUtility) < 0.000001:
+            if abs(averageUtility - bestAverageUtility) < 0.000001:
                 bestAction.append(action)
                 continue
 
@@ -92,31 +92,43 @@ class SmartPlayer(Player):
             a.append((nrow,ncol))
         return a
 
-    # Apply policy of nodes on minimum cost paths
     def GetCandidateActions(self,board: HexBoard, player_id):
+        # Apply policy of nodes on minimum cost paths
+        # Play on nodes that belong to minimum cost paths from source to sink.
+
+        minimumCost, parents = self.ComputeMinimumCostPaths(board,player_id)
+        candidateNodes = self.GetUnplayedNodesInMinimumCostPaths(board,player_id,minimumCost,parents)
+        return [ (row,col,player_id) for row,col in candidateNodes]
+
+    def GetUnplayedNodesInMinimumCostPaths(self,board,player_id,minimumCost,parents):
+        nodesInMinimunCostPaths = self.GetNodesConnectedToSinkThatBelongToMinimunCostPaths(board,player_id,minimumCost)
+        isExamined = [ [False for _ in range(board.size)] for _ in range(board.size) ]
+        candidates = []
+        while len(nodesInMinimunCostPaths) > 0:
+            row,col = nodesInMinimunCostPaths.pop()
+            if row == -1 or col == -1:
+                # This node is the source. Ignore it.
+                continue
+            if isExamined[row][col]:
+                continue
+            isExamined[row][col] = True
+            if board.board[row][col] == 0:
+                candidates.append((row,col))
+
+            nodesInMinimunCostPaths = nodesInMinimunCostPaths + parents[row][col]
+        return candidates
+
+    def ComputeMinimumCostPaths(self,board,player_id):
+        # Dijkstra Algorithm
         # dont modify the board
         # each cell in the board is a node in the graph
+
         inf = 100000000
         minimumCost = [ [inf for _ in range(board.size)] for _ in range(board.size) ]
         parents = [ [ [] for _ in range(board.size)] for _ in range(board.size) ]
-        isExamined = [ [False for _ in range(board.size)] for _ in range(board.size) ]
 
-        # Dijkstra Algorithm
         pq = [] # Priority queue
-        
-        # Get first column cells that are empty or belong to you
-        if player_id == 1:
-            for row in range(board.size):
-                if board.board[row][0] == 0 or board.board[row][0] == 1:
-                    heapq.heappush(pq,(1 - board.board[row][0],row,0,(-1,-1)) )
-
-        # Get first row cells that are empty or belong to you
-        if player_id == 2:
-            for col in range(board.size):
-                if board.board[0][col] == 0:
-                    heapq.heappush(pq,(1,0,col,(-1,-1)))
-                if board.board[0][col] == 2:
-                    heapq.heappush(pq,(0,0,col,(-1,-1)))
+        self.InitializeWithNodesConnectedToSource(pq,board,player_id)
 
         while len(pq) > 0:
             cost,row,col,parent = heapq.heappop(pq)
@@ -135,31 +147,47 @@ class SmartPlayer(Player):
                 minimumCost[row][col] = cost
                 parents[row][col].append(parent)
                 for newrow,newcol in self.Adyacent(row,col,board.size):
-                    weight = 0 # If you played on this cell the edge has weight 0
-
-                    # if this cell is empty the edge has weight 1
-                    if board.board[newrow][newcol] == 0:
-                        weight = 1
-                    
                     # You cant move to other player cells
                     if board.board[newrow][newcol] != 0 and board.board[newrow][newcol] != player_id:
                         continue
+
+                    weight = 0
+
+                    # The cost of reaching a node that has not been played is 1
+                    if board.board[newrow][newcol] == 0:
+                        weight = 1
                     
                     heapq.heappush(pq,(cost + weight,newrow,newcol,(row,col)))
+        
+        return minimumCost,parents
 
-        # Compute Nodes that belong to minimun cost paths
+    def InitializeWithNodesConnectedToSource(self,priority_queue,board,player_id):
+        # Get first column cells that are empty or belong to you
+        if player_id == 1:
+            for row in range(board.size):
+                if board.board[row][0] == 0 or board.board[row][0] == 1:
+                    heapq.heappush(priority_queue,(1 - board.board[row][0],row,0,(-1,-1)) )
+        # Get first row cells that are empty or belong to you
+        if player_id == 2:
+            for col in range(board.size):
+                if board.board[0][col] == 0:
+                    heapq.heappush(priority_queue,(1,0,col,(-1,-1)))
+                if board.board[0][col] == 2:
+                    heapq.heappush(priority_queue,(0,0,col,(-1,-1)))
 
+    def GetNodesConnectedToSinkThatBelongToMinimunCostPaths(self,board,player_id,minimumCost):
         selected = []
+        min = 100000000
         if player_id == 1:
             lastCol = board.size - 1
             # Get the last column cells whose cost is equal to the minimum cost, they can be unocupied or ocupied
-            min = inf
             for row in range(board.size):
                 if board.board[row][lastCol] == 2:
                     continue
                 cost = minimumCost[row][lastCol]
                 if cost == min:
                     selected.append((row,lastCol))
+                    continue
                 if cost < min:
                     min = cost
                     selected = [ (row,lastCol) ]
@@ -167,36 +195,17 @@ class SmartPlayer(Player):
         if player_id == 2:
             lastRow = board.size - 1
             # Get the last row cells whose cost is equal to the minimum cost, they can be unocupied or ocupied by you
-            min = inf
             for col in range(board.size):
                 if board.board[lastRow][col] == 1:
                     continue
                 cost = minimumCost[lastRow][col]
                 if cost == min:
                     selected.append((lastRow,col))
+                    continue
                 if cost < min:
                     min = cost
                     selected = [ (lastRow,col) ]
-
-        candidates = []
-        while len(selected) > 0:
-            row,col = selected.pop()
-            # que puede pasar sean 0 o mias, no pueden ser del otro
-            # sea -1 -1 que no se juega
-            if row == -1 or col == -1:
-                continue
-
-            if isExamined[row][col]:
-                continue
-
-            isExamined[row][col] = True
-            if board.board[row][col] == 0:
-                candidates.append((row,col,player_id))
-
-            selected = selected + parents[row][col]
-
-        return candidates
-
+        return selected
 
     def ApplyAction(self,action,board: HexBoard):
         """Given an action and a board, modify the board by appliying the action."""
