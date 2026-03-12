@@ -16,8 +16,9 @@ class SmartPlayer(Player):
 
     def mcts(self,board: HexBoard):
         startTime = time.time()
+
         actions = self.GetCandidateActions(board,self.player_id)
-        
+
         utility = {}
         for action in actions:
             utility[action] = 0
@@ -33,15 +34,26 @@ class SmartPlayer(Player):
                 utility[action] = utility[action] + 1
             playouts = playouts + 1
 
-        bestAction = (0,0,0)
+        return self.GetBestAction(actions,utility,playouts)
+
+    
+    def GetBestAction(self,actions,utility,playouts):
+        """Returns the action of higest average utility. Ties are broke randomly."""
+        bestAction = []
         bestAverageUtility = -1
         for action in actions:
             averageUtility = utility[action] / playouts
-            if averageUtility > bestAverageUtility:
-                bestAction = action
-                bestAverageUtility = averageUtility 
 
-        return bestAction
+            # For breaking ties randomly
+            if averageUtility == bestAverageUtility:
+                bestAction.append(action)
+
+            if averageUtility > bestAverageUtility:
+                bestAction = [ action ]
+                bestAverageUtility = averageUtility
+
+        return random.choice(bestAction)
+
 
     # Returns the wining player. Simulates alternating plays, following a playout policy, until it reaches a terminal state. 
     def Simulate(self,board: HexBoard, player):
