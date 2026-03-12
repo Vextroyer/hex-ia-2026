@@ -47,7 +47,7 @@ class SmartPlayer(Player):
     def Simulate(self,board: HexBoard, player):
         """ board: A COPY of the current board. player: the current player"""
         while not self.IsTerminal(board):
-            actions = self.GetEmptyCells(board,player)
+            actions = self.GetCandidateActions(board,player)
             action = random.choice(actions)
             self.ApplyAction(action,board)
             player = self.AlternatePlayer(player)

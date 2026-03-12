@@ -56,4 +56,8 @@ En tableros con n = 20, consistentemente derrota al random en 20 jugadas. Teoric
 Pero.
 
 Cuando existen varios nodos para ocupar. Y alguno de ellos es critico, porque si el oponente lo ocupa el costo del
-camino de costo minima aumentara. EL algoritmo decide aleatoriamente y no se da cuenta de ese "eslabon debil". 
+camino de costo minima aumentara. EL algoritmo decide aleatoriamente y no se da cuenta de ese "eslabon debil".
+
+# MCTSV3
+
+En la simulacion. Jugar tambien en los caminos de costo minimo. Superior al algoritmo anterior.
