@@ -4,6 +4,8 @@ import random as random
 import time as time
 import heapq as heapq
 
+# An action is a tuple (row,col,player_id). For example (1,4,1) or (2,1,2).
+
 # Smart Player is a MonteCarloTreeSearch based player.
 class SmartPlayer(Player):
     # Time limit of five seconds
@@ -41,13 +43,11 @@ class SmartPlayer(Player):
 
         return bestAction
 
-    # Helper functions and classes
-
-    # Returns the wining player. Simulates alternating random plays until it reaches a terminal state.
+    # Returns the wining player. Simulates alternating plays, following a playout policy, until it reaches a terminal state. 
     def Simulate(self,board: HexBoard, player):
         """ board: A COPY of the current board. player: the current player"""
         while not self.IsTerminal(board):
-            actions = self.GetCandidateActions(board,player)
+            actions = self.GetCandidateActions(board,player) # Playout policy
             action = random.choice(actions)
             self.ApplyAction(action,board)
             player = self.AlternatePlayer(player)
@@ -63,9 +63,7 @@ class SmartPlayer(Player):
         else:
             return 2
 
-
-
-    # for moving in the graph
+    # Even-r adyacency logic. For moving in the board-graph.
     adyacents_for_odd_rows = [(-1,0),(0,1),(1,0),(1,-1),(0,-1),(-1,-1)]
     adyacents_for_even_rows = [(-1,0),(-1,1),(0,1),(1,1),(1,0),(0,-1)]
     def Adyacent(self,row,col,size):
@@ -86,29 +84,29 @@ class SmartPlayer(Player):
     # Apply policy of nodes on minimum cost paths
     def GetCandidateActions(self,board: HexBoard, player_id):
         # dont modify the board
+        # each cell in the board is a node in the graph
         inf = 100000000
         minimumCost = [ [inf for _ in range(board.size)] for _ in range(board.size) ]
         parents = [ [ [] for _ in range(board.size)] for _ in range(board.size) ]
         isExamined = [ [False for _ in range(board.size)] for _ in range(board.size) ]
 
-        # Priority queue
-        pq = []
+        # Dijkstra Algorithm
+        pq = [] # Priority queue
         
+        # Get first column cells that are empty or belong to you
         if player_id == 1:
-            # Get first column cells that are empty or belong to you
             for row in range(board.size):
                 if board.board[row][0] == 0 or board.board[row][0] == 1:
                     heapq.heappush(pq,(1 - board.board[row][0],row,0,(-1,-1)) )
 
+        # Get first row cells that are empty or belong to you
         if player_id == 2:
-            # Get first column cells that are empty or belong to you
             for col in range(board.size):
                 if board.board[0][col] == 0:
                     heapq.heappush(pq,(1,0,col,(-1,-1)))
                 if board.board[0][col] == 2:
                     heapq.heappush(pq,(0,0,col,(-1,-1)))
 
-        # Dijkstra
         while len(pq) > 0:
             cost,row,col,parent = heapq.heappop(pq)
 
@@ -137,6 +135,8 @@ class SmartPlayer(Player):
                         continue
                     
                     heapq.heappush(pq,(cost + weight,newrow,newcol,(row,col)))
+
+        # Compute Nodes that belong to minimun cost paths
 
         selected = []
         if player_id == 1:
@@ -186,13 +186,6 @@ class SmartPlayer(Player):
 
         return candidates
 
-    def GetEmptyCells(self,board,player_id):
-        actions = []
-        for row in range(board.size):
-            for col in range(board.size):
-                if board.board[row][col] == 0:
-                    actions.append((row,col,player_id))
-        return actions
 
     # Modify state of a board
     def ApplyAction(self,action,board: HexBoard):
@@ -211,8 +204,3 @@ class SmartPlayer(Player):
             return 1
         raise RuntimeError("Invalid player")
 
-
-
-# What is game state: A hex grid with some moves done.
-# What is an action: a tuple (row,column,player_id)
-# Approach on simulate: alternating random play, its nedded to know the sate of the board
