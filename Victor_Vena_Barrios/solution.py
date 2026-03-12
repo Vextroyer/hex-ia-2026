@@ -9,7 +9,7 @@ import heapq as heapq
 # Smart Player is a MonteCarloTreeSearch based player.
 class SmartPlayer(Player):
     # Time limit of five seconds
-    time_limit = 4.9
+    time_limit = 4.8
 
     def play(self, board: HexBoard) -> tuple:
         return self.mcts(board)
