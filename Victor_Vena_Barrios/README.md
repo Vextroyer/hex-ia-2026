@@ -1,24 +1,21 @@
-# MCTSV1
+En este repositorio se tiene un jugador de HEX, basado en una busqueda de Monte Carlo pura(pure Monte Carlo search), utilizando
+una estrategia de caminos de costo minimo.
 
-El primer algoritmo, que no es monte carlo pero esta basado en el.
-Para el estado actual del tablero mira todas las posibles acciones ( casillas vacias )
-Luego mientras le quede tiempo, elige una al azar.
-Y simula una partida desde esa accion, jugando siempre al azar para ambos.
-Entonces, anota para cada accion cuantas partida gana.
-Y devuelve la accion que gane mas partidas
+## Busqueda de Monte Carlo pura
 
-## Resultados
-El algoritmo funciona mejor que el random en tableros pequenos (n = 5). Juega bien incluso contra mi.
+Partiendo de un estado ( un tablero de HEX con jugadas hechas y el jugador actual).
 
-En tableros grandes (n = 20), es como un random. Hace jugadas aleatorias que no lo acercan a conectar sus caminos.
-Es como si estuviese "confundido".
+Se elige una jugada inicial al azar dentro de unas posibles jugadas.
 
-Una mejora que se le puede hacer es acotar la cantidad de acciones inicial.
-Para esto aplicare la estrategia de los caminos de costo minimo.
+Luego se simula una partida completa desde esta jugada. 
 
-# Estrategia de los caminos de costo minimo:
+Y esto se repite mientras haya tiempo.
 
-Resumen: Considera hacer tu jugada, SOLO en las casillas desocupadas que pertenecen a algun camino de costo minimo.
+Al final se elige la jugada inicial con mayor porcentaje de victorias.
+
+## Estrategia de los caminos de costo minimo:
+
+Resumen: Considera jugar SOLO en las casillas desocupadas que pertenecen a algun camino de costo minimo.
 Porque si consigues ocuparlas, ganaras en la menor cantidad de movimientos posibles.
 
 Para esta estrategia considera el tablero del hex como un grafo con las conexiones usuales. Donde:
@@ -32,32 +29,20 @@ El sumidero (T) esta conectado al extremo final. (derecha o inferior)
 
 Y se busca jugar en los caminos de costo minimo de S a T.
 
-## Implementacion y complejidad
-Con una modificacion al algoritmo de Dijkstra es posible hallar los nodos que pertenecen a estos caminos.
-Se guarda para cada nodo sus "padres", es decir, sus predecesores en los distintos caminos de costo minimo.
-Despues se explora estos caminos, de hijos a padres, desde el sumidero hasta la fuente.
-Si el tamano del tablero es NxN. Hay un orden de M = N^2 nodos.
-El algoritmo de Dijkstra con una cola de prioridad toma O(ElogV), en este caso O(MlogM). La cantidad de aristas es O(6M) que es O(M).
-Y la exploracion esta acotada a O(M). Porque cada nodo solo se explora una vez.
-Por tanto la complejidad de esta estrategia es de O(MlogM)
+## Como se integra esta estrategia con Monte Carlo
 
-# MCTSV2
+El conjunto de jugadas iniciales a partir de un estado se determinan usando esta estrategia.
 
-El mismo algoritmo que antes. Con un cambio.
+Ademas a la hora de simular una partida solo se consideran jugadas en los caminos de costo minimo.
 
-Solo considera como acciones jugar en nodos que pertenecen a algun camino de costo minimo.
+## Desventajas
 
-## Resultados
-El algoritmo mantiene el rendimiento contra el random en tableros pequenos. (n = 5)
+Cuando existen varios nodos para jugar en un camino de costo minimo. Y alguno de ellos es critico, porque si el oponente lo ocupa el costo del camino de costo minima aumenta. EL algoritmo decide aleatoriamente y no se da cuenta de ese "eslabon debil".
 
-Y en tableros grandes ya no se confunde. Al contrario, se concentra. Es como si jugara en una linea recta.
-En tableros con n = 20, consistentemente derrota al random en 20 jugadas. Teoricamente lo mejor.
+    3
+1       4
+    2
 
-Pero.
-
-Cuando existen varios nodos para ocupar. Y alguno de ellos es critico, porque si el oponente lo ocupa el costo del
-camino de costo minima aumentara. EL algoritmo decide aleatoriamente y no se da cuenta de ese "eslabon debil".
-
-# MCTSV3
-
-En la simulacion. Jugar tambien en los caminos de costo minimo. Superior al algoritmo anterior.
+Por ejemplo, supon que 1,2,3,4 son nodos en un camino de costo minimo. 1 conectado a 2,3. 2,3 conectado a 4.
+Si ya se jugo en 1. Jugar en 4 es mejor que jugar en 2 o 3. Pero el algoritmo quizas elija jugar en 2, y el oponente
+puede jugar en 4 eliminando ese camino de costo minimo.
